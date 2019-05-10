@@ -1,0 +1,69 @@
+import numpy as np
+import pandas as pd
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model.logistic import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, roc_auc_score, accuracy_score
+
+import matplotlib.pyplot as plt
+from pylab import rcParams
+import seaborn as sb
+
+# open historical data file
+path_hist = 'NCAA_Tourney_2002_2018_modified_random.csv'
+df_hist = pd.read_csv(path_hist)
+
+# open predict data file
+path_predict = 'NCAA_Tourney_2019.csv'
+df_predict = pd.read_csv(path_predict)
+
+# input variables and target variable
+x = df_hist[[]]
+y = df_hist['game_result']
+
+# Using Random Forest to select features
+for i in range(10): #iteration for 10 times
+    tmp = set()
+    rfc = RandomForestClassifier(n_estimators=100, oob_score=True, n_jobs=-1)
+    rfc.fit(x, y)
+print("training finished \n")
+
+importance = rfc.feature_importances_
+indices = np.argsort(importance)[::-1]  
+features = x.columns
+for f in range(x.shape[1]):
+    print(("%2d) %-*s %f" % (f + 1, 30, features[indices[f]], importance[indices[f]])))
+
+# reselect input variables
+x_hist_select = df_hist[[]]
+y_hist_select = df_hist['game_result']
+
+# check correlation among variables
+corr_table = x_hist_select.corr()
+rcParams['figure.figsize'] = 10, 8
+sb.heatmap(corr_table, vmin=-1, vmax=1)
+
+# split train and test 
+x_train, x_test, y_train, y_test = train_test_split(x_hist_select, y_hist_select, train_size=0.7)
+
+######### Machine Learning ##########
+
+# Logistic Regression
+lr = LogisticRegression()
+lr.fit(x_train, y_train)
+
+# KNN
+knn = KNeighborsClassifier(n_neighbors=10, weights='distance', algorithm ='auto')
+knn.fit(x_train, y_train)
+y_knn_validation = knn.predict(x_test)
+
+# Model Evaluation (roc-auc)
+fpr_lr, tpr_lr, thresholds = roc_curve(y_test, y_lr_validation)
+fpr_knn, tpr_knn, thresholds = roc_curve(y_test, y_knn_validation)
+
+plt.plot([0,1],[0,1],'k--')
+plt.plot(fpr_lr, tpr_lr, label='LR')
+plt.plot(fpr_knn, tpr_knn, label='KNN')
+plt.legend(loc='best')
